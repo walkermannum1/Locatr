@@ -1,13 +1,11 @@
 package com.example.user.locatr;
 
-import android.app.Activity;
-import android.os.Bundle;
+import android.support.v4.app.Fragment;
 
-public class LocatrActivity extends Activity {
+public class LocatrActivity extends SingleFragmentActivity {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.fragment_locatr);
+    protected Fragment createFragment() {
+        return LocatrFragment.newInstance();
     }
 }
