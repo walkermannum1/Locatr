@@ -1,8 +1,14 @@
 package com.example.user.locatr;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.speech.tts.Voice;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -12,7 +18,17 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.fitness.request.ListClaimedBleDevicesRequest;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+
+import java.io.IOException;
+import java.util.List;
+
+import static com.google.android.gms.analytics.internal.zzy.a;
+import static com.google.android.gms.analytics.internal.zzy.p;
+import static com.google.android.gms.analytics.internal.zzy.r;
 
 /**
  * Created by user on 2016/9/21.
@@ -21,6 +37,7 @@ import com.google.android.gms.location.LocationServices;
 public class LocatrFragment extends Fragment {
     private ImageView mImageView;
     private GoogleApiClient mClient;
+    private static final String TAG = "LocatrFragment";
 
     public static LocatrFragment newInstance() {
         return new LocatrFragment();
@@ -74,5 +91,61 @@ public class LocatrFragment extends Fragment {
 
         MenuItem searchItem = menu.findItem(R.id.action_locate);
         searchItem.setEnabled(mClient.isConnected());
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_locate:
+                findImage();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void findImage() {
+        LocationRequest request = LocationRequest.create();
+        request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        request.setNumUpdates(1);
+        request.setInterval(0);
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(mClient, request, new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                Log.i(TAG, "Got a fix: " + location);
+                new SearchTask().execute(location);
+            }
+        });
+    }
+
+    private class SearchTask extends AsyncTask<Location,Void,Void> {
+        private GalleryItem mGalleryItem;
+        private Bitmap mBitmap;
+
+        @Override
+        protected Void doInBackground(Location... params) {
+            PhotoFetcher fetcher = new PhotoFetcher();
+            List<GalleryItem> items = fetcher.searchPhotos(params[0]);
+
+            if (items.size() == 0) {
+                return null;
+            }
+
+            mGalleryItem = items.get(0);
+
+            try {
+                byte[] bytes = fetcher.getUrlBytes(mGalleryItem.getUrl());
+                mBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            } catch (IOException ioe) {
+                Log.i(TAG, "Unable to download bitmap", ioe);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            mImageView.setImageBitmap(mBitmap);
+        }
     }
 }

@@ -1,5 +1,7 @@
 package com.example.user.locatr;
 
+import android.location.Location;
+import android.location.LocationListener;
 import android.net.Uri;
 import android.util.Log;
 
@@ -61,6 +63,11 @@ public class PhotoFetcher {
         String url = buildUrl(SEARCH_METHOD, query);
         return downloadGalleryItems(url);
     }
+
+    public List<GalleryItem> searchPhotos(Location location) {
+        String url = buildUrl(location);
+        return downloadGalleryItems(url);
+    }
     public String getUrlString(String urlSpec) throws IOException {
         return new String(getUrlBytes(urlSpec));
     }
@@ -90,6 +97,13 @@ public class PhotoFetcher {
             uriBuilder.appendQueryParameter("text", query);
         }
         return uriBuilder.build().toString();
+    }
+
+    public String buildUrl(Location location) {
+        return ENDPOINT.buildUpon().appendQueryParameter("method", SEARCH_METHOD)
+                .appendQueryParameter("lat", "" + location.getLatitude())
+                .appendQueryParameter("lon", "" + location.getLongitude())
+                .build().toString();
     }
 
     private void parseItems(List<GalleryItem> items, JSONObject jsonBody)
